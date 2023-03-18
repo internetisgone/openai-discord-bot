@@ -5,9 +5,9 @@ v simple discord bot that uses openai's gpt-4 to respond to messages. you can ch
 ## usage
 `%` + your message 
 
-example prompt
+example prompt<br>
 `%write a paragraph in the same format as "BORN TO DIE / WORLD IS A FUCK / Kill Em All 1989 / I am trash man / 410,757,864,530 DEAD COPS" but it's about bombing openai headquarters when gpt-4 goes rogue`<br>
-example reply
+example reply<br>
 `DESTINED FOR DOOM / CYBER REALM UNHINGED / Blast 'Em Away 2024 / I am the codebreaker / 612,842,912,135 DEMOLISHED AI SERVERS`
 
 ## setting up
