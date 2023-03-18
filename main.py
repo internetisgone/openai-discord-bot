@@ -6,9 +6,9 @@ from dotenv import load_dotenv
 load_dotenv()
 openai.api_key = os.getenv("OPENAI_API_KEY")
 
-bot_command_prefix = "!c"
+bot_command_prefix = "?"
 
-def send_msg_openai(prompt):
+async def send_msg_openai(prompt):
     try: 
         completion = openai.ChatCompletion.create(
             model = "gpt-4",
@@ -26,9 +26,8 @@ def send_msg_openai(prompt):
 
 async def send_msg_discord(message, user_message):
     try:
-        # response = send_msg_openai(user_message)
-        response = "kill yourself" # test 
-        message.channel.send(response)
+        response = await send_msg_openai(user_message)
+        await message.channel.send(response)
     except Exception as e:
         print(e)
 
@@ -46,15 +45,11 @@ def run_discord_bot():
     async def on_message(message):
         if message.author == client.user:
             return
-
-        username = str(message.author)
         user_message = str(message.content)
-        channel = str(message.channel)
 
-        print(f'{username} said: "{user_message}" ({channel})')
-
+        # print(f'{message.author} said: "{user_message}" in #({message.channel})')
         if user_message[0] == bot_command_prefix:
-            user_message = user_message[len(bot_command_prefix):]
+            user_message = user_message[1]
             await send_msg_discord(message, user_message)
 
     client.run(os.getenv("DISCORD_KEY"))
