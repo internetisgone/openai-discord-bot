@@ -6,6 +6,7 @@ from dotenv import load_dotenv
 
 BOT_COMMAND_PREFIX = "%"
 PROXY = "http://127.0.0.1:1087" # set to None if not using a proxy
+CHAR_LIMIT_DISCORD = 2000       # max chars in a message
 
 load_dotenv()
 openai.api_key = os.getenv("OPENAI_API_KEY")
@@ -30,16 +31,20 @@ async def send_msg_discord(message, user_message):
         # try get a response via openai api
         response = await send_msg_openai(user_message)
 
+        ####### test #######
         # send a random msg
         # response = responses_bomb[random.randint(0, len(responses_bomb) - 1)]
 
-        response = "<@" + str(message.author.id) + ">\n\n" + response
-        # discord has a char limit of 2000
-        if len(response) > 2000:
-            print("response exceeded 2000 chars")
-            response = response[:1999]
+        # response = "<@" + str(message.author.id) + ">\n\n" + response # mention author
 
-        await message.channel.send(response)
+        if len(response) > CHAR_LIMIT_DISCORD:
+            print(f"response exceeded {CHAR_LIMIT_DISCORD} chars")
+            parts = [response[i:i+CHAR_LIMIT_DISCORD] for i in range(0, len(response), CHAR_LIMIT_DISCORD)]
+            for part in parts:
+                await message.reply(part)
+        else:
+            await message.reply(response)
+
     except Exception as e:
         print(e)
 
@@ -67,7 +72,7 @@ def run_discord_bot():
             user_message = user_message[1:]
             # print(message)
             # print(f'sending prompt "{user_message}" from {message.author} in #{message.channel} in {message.guild}')
-            print(f'✧･ﾟ:✧･ﾟ:* ･ﾟ✧*:･ﾟ✧ \n sending prompt "{user_message}" at {message.created_at} UTC \n ✧･ﾟ:✧･ﾟ:* ･ﾟ✧*:･ﾟ✧')
+            print(f'✧･ﾟ:✧･ﾟ:* ✧･ﾟ✧*:･ﾟﾐ☆ \n sending prompt "{user_message}" at {message.created_at} UTC \n ✧･ﾟ:✧･ﾟ:* ✧･ﾟ✧*:･ﾟﾐ☆')
             await send_msg_discord(message, user_message)
 
     client.run(os.getenv("DISCORD_KEY"))
