@@ -29,5 +29,4 @@ dotenv
 
 ## todo
 requirements.txt<br>
-mention user<br>
 server whitelist

@@ -5,6 +5,7 @@ from dotenv import load_dotenv
 # import random
 
 BOT_COMMAND_PREFIX = "%"
+PROXY = "http://127.0.0.1:1087" # set to None if not using a proxy
 
 load_dotenv()
 openai.api_key = os.getenv("OPENAI_API_KEY")
@@ -28,16 +29,15 @@ async def send_msg_discord(message, user_message):
     try:
         # try get a response via openai api
         response = await send_msg_openai(user_message)
+
+        # send a random msg
+        # response = responses_bomb[random.randint(0, len(responses_bomb) - 1)]
+
+        response = "<@" + str(message.author.id) + ">\n\n" + response
         # discord has a char limit of 2000
         if len(response) > 2000:
             print("response exceeded 2000 chars")
             response = response[:1999]
-
-        # send a random msg
-        # if user_message[0] == "p":
-        #     response = responses_pseud[random.randint(0, len(responses_pseud) - 1)]
-        # else:
-        #     response = responses_bomb[random.randint(0, len(responses_bomb) - 1)]
 
         await message.channel.send(response)
     except Exception as e:
@@ -46,7 +46,11 @@ async def send_msg_discord(message, user_message):
 def run_discord_bot():
     intents = discord.Intents.default()
     intents.message_content = True
-    client = discord.Client(intents = intents, proxy="http://127.0.0.1:1087")  # proxy is used for bypassing internet censorship. can be ommited if discord isn't banned in your country
+    client = None
+    if PROXY != None:
+        client = discord.Client(intents = intents, proxy = PROXY)  
+    else:
+        client = discord.Client(intents = intents)
 
     @client.event
     async def on_ready():
@@ -54,18 +58,19 @@ def run_discord_bot():
 
     @client.event
     async def on_message(message):
+        # ignore msg sent by the bot itself
         if message.author == client.user:
             return
 
         user_message = str(message.content)
-
         if user_message[0]== BOT_COMMAND_PREFIX:
             user_message = user_message[1:]
-            print(f'sending prompt: "{user_message}" from {message.author} in #({message.channel})')
+            # print(message)
+            # print(f'sending prompt "{user_message}" from {message.author} in #{message.channel} in {message.guild}')
+            print(f'✧･ﾟ:✧･ﾟ:* ･ﾟ✧*:･ﾟ✧ \n sending prompt "{user_message}" at {message.created_at} UTC \n ✧･ﾟ:✧･ﾟ:* ･ﾟ✧*:･ﾟ✧')
             await send_msg_discord(message, user_message)
 
     client.run(os.getenv("DISCORD_KEY"))
 
 if __name__ == '__main__':
     run_discord_bot()
-    
