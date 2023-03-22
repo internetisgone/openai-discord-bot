@@ -6,6 +6,7 @@ from dotenv import load_dotenv
 
 BOT_COMMAND_PREFIX = "%"
 PROXY = "http://127.0.0.1:1087" # set to None if not using a proxy
+# PROXY = None
 CHAR_LIMIT_DISCORD = 2000       # max chars in a message
 
 load_dotenv()
@@ -23,8 +24,8 @@ async def send_msg_openai(prompt):
         print(completion.choices[0])
         return completion.choices[0].message.content
     except Exception as e:
-        print(e)
-        return ""
+        print(f"openai error: {e}")
+        return "612,842,912,135 DEMOLISHED OPENAI SERVERS: " + e 
 
 async def send_msg_discord(message, user_message):
     try:
@@ -46,7 +47,7 @@ async def send_msg_discord(message, user_message):
             await message.reply(response)
 
     except Exception as e:
-        print(e)
+        print(f"discord error: {e}")
 
 def run_discord_bot():
     intents = discord.Intents.default()
@@ -68,7 +69,7 @@ def run_discord_bot():
             return
 
         user_message = str(message.content)
-        if user_message[0]== BOT_COMMAND_PREFIX:
+        if user_message[0] == BOT_COMMAND_PREFIX:
             user_message = user_message[1:]
             # print(message)
             # print(f'sending prompt "{user_message}" from {message.author} in #{message.channel} in {message.guild}')

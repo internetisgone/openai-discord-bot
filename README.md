@@ -28,5 +28,4 @@ discord<br>
 dotenv
 
 ## todo
-requirements.txt<br>
 server whitelist
