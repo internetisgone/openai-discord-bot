@@ -25,7 +25,7 @@ async def send_msg_openai(prompt):
         return completion.choices[0].message.content
     except Exception as e:
         print(f"openai error: {e}")
-        return "612,842,912,135 DEMOLISHED OPENAI SERVERS: " + e 
+        return "612,842,912,135 DEMOLISHED OPENAI SERVERS: " + str(e) 
 
 async def send_msg_discord(message, user_message):
     try:
