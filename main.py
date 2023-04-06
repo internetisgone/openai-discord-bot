@@ -1,13 +1,14 @@
 import os
-import openai 
+import openai
 import discord
 from dotenv import load_dotenv
 # import random
 
 BOT_COMMAND_PREFIX = "%"
-PROXY = "http://127.0.0.1:1087" # set to None if not using a proxy
-# PROXY = None
-CHAR_LIMIT_DISCORD = 2000       # max chars in a message
+# PROXY = "http://127.0.0.1:1087" # set to None if not using a proxy
+PROXY = None
+SERVER_WHITELIST = []             # server id eg "123456789012345678"
+CHAR_LIMIT_DISCORD = 2000         # max chars in a message
 
 load_dotenv()
 openai.api_key = os.getenv("OPENAI_API_KEY")
@@ -21,7 +22,7 @@ async def send_msg_openai(prompt):
             ],
             temperature = 0.9,
         )
-        print(completion.choices[0])
+        print(completion)
         return completion.choices[0].message.content
     except Exception as e:
         print(f"openai error: {e}")
@@ -64,6 +65,16 @@ def run_discord_bot():
 
     @client.event
     async def on_message(message):
+        # ignore dm 
+        if message.guild == None:
+            return
+        
+        # ignore msg from non-whitelisted servers
+        if len(SERVER_WHITELIST) > 0:
+            if not str(message.guild.id) in SERVER_WHITELIST:
+                print("server not in whitelist")
+                return
+            
         # ignore msg sent by the bot itself
         if message.author == client.user:
             return

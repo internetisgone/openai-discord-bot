@@ -6,7 +6,7 @@ v simple discord bot that uses openai's gpt-4 api to respond to messages. you ca
 `%` + your message 
 
 example prompt<br>
-`%write a paragraph in the same format as "BORN TO DIE / WORLD IS A FUCK / Kill Em All 1989 / I am trash man / 410,757,864,530 DEAD COPS" but it's about bombing openai headquarters when gpt-4 goes rogue`
+`%write a paragraph in the same format as "BORN TO DIE / WORLD IS A FUCK / Kill Em All 1989 / I am trash man / 410,757,864,530 DEAD COPS" but it's about bombing openai datacenters when gpt-4 goes rogue`
 
 ## setting up
 - install the requirements and create a .env file using the template below
@@ -25,7 +25,13 @@ OPENAI_API_KEY = "654321"
 ## requirements
 openai<br>
 discord<br>
-dotenv
+dotenv<br>
+
+```
+pip install openai
+pip install discord
+pip install python-dotenv
+```
 
 ## todo
-server whitelist
+chat session
