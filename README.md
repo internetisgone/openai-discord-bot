@@ -10,7 +10,7 @@ v simple discord bot that uses openai's gpt-4 api to respond to messages. you ca
 - paste your openai key in .env
 - go to discord developer portal, create a new application and add a bot under it
 - copy the bot's token and paste it in .env
-- generate an invite link. go to OAuth2 - URL generator, set scope to "bot", and select the "send messages" and "read messages/view channels" permissions
+- generate an invite link. go to OAuth2 - URL generator, set scopes to "bot" and "applications.commands", and select the "send messages", "use slash commands" permission
 - invite the bot to your server and run main.py
 
 ## .env

@@ -1,93 +1,147 @@
 import os
-import openai
 import discord
+from discord import app_commands
 from dotenv import load_dotenv
-# import random
-
-BOT_COMMAND_PREFIX = "%"
-# PROXY = "http://127.0.0.1:1087" # set to None if not using a proxy
-PROXY = None
-SERVER_WHITELIST = []             # server id eg "123456789012345678"
-CHAR_LIMIT_DISCORD = 2000         # max chars in a message
+import openai
+from openai import OpenAI
 
 load_dotenv()
-openai.api_key = os.getenv("OPENAI_API_KEY")
+openai_client = OpenAI(
+    api_key = os.getenv("OPENAI_API_KEY")
+)
 
-async def send_msg_openai(prompt):
+PROXY = None
+# PROXY = "http://127.0.0.1:1087"
+CHAR_LIMIT_DISCORD = 2000         # max chars in a discord message
+
+models = { 
+    "4": "gpt-4",
+    "4-vision": "gpt-4-vision-preview",
+    "4-turbo": "gpt-4-1106-preview",
+    "3.5-turbo": "gpt-3.5-turbo", 
+    "davinci-003": "text-davinci-003"
+    }
+
+async def get_response_openai(model, prompt):
     try: 
-        completion = openai.ChatCompletion.create(
-            model = "gpt-4",
+        response = openai_client.chat.completions.create(
+            model = models[model],
             messages = [ 
-                {"role": "user", "content": prompt} 
+                {
+                    "role": "user", 
+                    "content": 
+                    [
+                        { "type": "text", "text": prompt },
+                    ]
+                } 
             ],
-            temperature = 0.9,
         )
-        print(completion)
-        return completion.choices[0].message.content
+        print(response)
+        return response.choices[0].message.content
     except Exception as e:
-        print(f"openai error: {e}")
+        print(str(e))
         return "612,842,912,135 DEMOLISHED OPENAI SERVERS: " + str(e) 
 
-async def send_msg_discord(message, user_message):
+async def get_response_openai_vision(prompt, img_url):
+    try: 
+        response = openai_client.chat.completions.create(
+            model = models["4-vision"],
+            messages = [ 
+                {
+                    "role": "user", 
+                    "content": 
+                    [
+                        { "type": "text", "text": prompt },
+                        { "type": "image_url", "image_url": img_url}
+                    ]
+                } 
+            ],
+            max_tokens = 300,
+        )
+        print(response)
+        return response.choices[0].message.content
+    except Exception as e:
+        print(str(e))
+        return "612,842,912,135 DEMOLISHED OPENAI SERVERS: " + str(e) 
+
+async def get_response_openai_legacy(model, prompt):
+    try: 
+        response = openai_client.completions.create(
+            model = models[model],
+            prompt = prompt
+        )
+        print(response)
+        return response.choices[0].text
+    except Exception as e:
+        print(str(e))
+        return "612,842,912,135 DEMOLISHED OPENAI SERVERS: " + str(e) 
+
+async def send_msg(model, followup, prompt, img_url):
     try:
         # try get a response via openai api
-        response = await send_msg_openai(user_message)
-
-        ####### test #######
-        # send a random msg
-        # response = responses_bomb[random.randint(0, len(responses_bomb) - 1)]
-
-        # response = "<@" + str(message.author.id) + ">\n\n" + response # mention author
+        if model == "4-vision":
+            if img_url == None:
+                # todo check if url returns valid image
+                await followup.send("img url is required to use gpt-4-vision")
+                return
+            response = await get_response_openai_vision(prompt, img_url)
+        elif model == "davinci-003":
+            response = await get_response_openai_legacy(model, prompt)
+        else:
+            response = await get_response_openai(model, prompt)
 
         if len(response) > CHAR_LIMIT_DISCORD:
-            print(f"response exceeded {CHAR_LIMIT_DISCORD} chars")
             parts = [response[i:i+CHAR_LIMIT_DISCORD] for i in range(0, len(response), CHAR_LIMIT_DISCORD)]
             for part in parts:
-                await message.reply(part)
+                await followup.send(part)
         else:
-            await message.reply(response)
+            await followup.send(response)
 
     except Exception as e:
-        print(f"discord error: {e}")
+        print(str(e))
+        return "error: " + str(e)
 
 def run_discord_bot():
     intents = discord.Intents.default()
     intents.message_content = True
-    client = None
-    if PROXY != None:
-        client = discord.Client(intents = intents, proxy = PROXY)  
-    else:
-        client = discord.Client(intents = intents)
 
-    @client.event
+    bot = discord.Client(intents = intents, proxy = PROXY) 
+    tree = app_commands.CommandTree(bot)
+
+    @bot.event
     async def on_ready():
-         print(f"{client.user} is running")
-
-    @client.event
-    async def on_message(message):
-        # ignore dm 
-        if message.guild == None:
-            return
-        
-        # ignore msg from non-whitelisted servers
-        if len(SERVER_WHITELIST) > 0:
-            if not str(message.guild.id) in SERVER_WHITELIST:
-                print("server not in whitelist")
-                return
+        print(f"{bot.user} is running")
+        #  for guild_id in SERVER_WHITELIST:
+        try:
+            synced = await tree.sync()
+            print(f"synced commands {synced}")
+        except Exception as e:
+            print(f"failed to sync command tree: {str(e)}")
             
-        # ignore msg sent by the bot itself
-        if message.author == client.user:
-            return
+    @tree.command(name = "kkb") 
+    @app_commands.choices(model = [
+        app_commands.Choice(name = "4", value = 0),
+        app_commands.Choice(name = "4-vision", value = 1),
+        app_commands.Choice(name = "4-turbo", value = 2),
+        app_commands.Choice(name = "3.5-turbo", value = 3),
+        app_commands.Choice(name = "davinci-003", value = 4),
+    ])
+    async def on_command(
+        interaction: discord.Interaction,
+        model: app_commands.Choice[int],
+        prompt: str,
+        img_url: str = None,
+        # img_base64: str
+        ):
+        if img_url == None:
+            await interaction.response.send_message(f"retard really said \"{prompt}\" to {models[model.name]}")
+        else:
+            await interaction.response.send_message(f"retard really said \"{prompt}\" and sent this image {img_url} to {models[model.name]}")
 
-        user_message = str(message.content)
-        if user_message[0] == BOT_COMMAND_PREFIX:
-            user_message = user_message[1:]
-            # print(message)
-            # print(f'sending prompt "{user_message}" from {message.author} in #{message.channel} in {message.guild}')
-            print(f'✧･ﾟ:✧･ﾟ:* ✧･ﾟ✧*:･ﾟﾐ☆ \n sending prompt "{user_message}" at {message.created_at} UTC \n ✧･ﾟ:✧･ﾟ:* ✧･ﾟ✧*:･ﾟﾐ☆')
-            await send_msg_discord(message, user_message)
+        print(f'✧･ﾟ:✧･ﾟ:* ✧･ﾟ✧*:･ﾟﾐ☆ \n sending prompt "{prompt}" and image {img_url} to model {model.name} at {interaction.created_at} UTC \n ✧･ﾟ:✧･ﾟ:* ✧･ﾟ✧*:･ﾟﾐ☆')
+        await send_msg(model.name, interaction.followup, prompt, img_url)
 
-    client.run(os.getenv("DISCORD_KEY"))
+    bot.run(os.getenv("DISCORD_KEY"))
 
 if __name__ == '__main__':
     run_discord_bot()
