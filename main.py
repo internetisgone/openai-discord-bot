@@ -150,7 +150,7 @@ def run_discord_bot():
         if msg.channel.type == "private" or msg.author == bot.user:
             return
 
-        if msg.content[0] != "%":
+        if msg.content[0] != SHORTHAND_COMMAND_PREFIX:
             return
         
         usr_msg = msg.content[1:]
