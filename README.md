@@ -1,6 +1,8 @@
 # openai-discord-bot
 
-simple discord bot that uses openai's chat and completion api to respond to messages. check the
+simple discord bot that uses openai's api to respond to messages.<br>
+currently supports gpt-4, gpt-4-vision-preview, gpt-4-1106-preview, gpt-3.5-turbo, and text-davinci-003 (legacy).<br>
+check the
 [official doc](https://platform.openai.com/docs/models) for latest changes.
 
 ## usage
@@ -16,7 +18,7 @@ uses the default model, in this case gpt-4
 - paste your openai api key in .env
 - go to discord developer portal, create a new application and add a bot under it
 - copy the bot's token and paste it in .env
-- generate an invite link. go to OAuth2 - URL generator, set scopes to "bot" and "applications.commands", and select the "send messages", "use slash commands" permission
+- generate an invite link. go to OAuth2 - URL generator, set scopes to "bot" and "applications.commands". select the "send messages" and "use slash commands" permissions
 - invite the bot to your server and run main.py
 
 ## .env
