@@ -5,10 +5,10 @@ simple discord bot that uses openai's chat and completion api to respond to mess
 
 ## usage
 ### slash command
-`/kkb [model] [prompt] [image url]`
+`/kkb [model] [prompt] [image url]`<br>
 image url is required for gpt-4-vision-preview only
 ### shorthand command
-`%` + your message 
+`%[prompt]`<br>
 uses the default model, in this case gpt-4
 
 ## setting up
