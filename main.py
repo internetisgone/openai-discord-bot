@@ -12,6 +12,9 @@ openai_client = OpenAI(
 
 PROXY = None
 # PROXY = "http://127.0.0.1:1087"
+SLASH_COMMAND_NAME = "kkb"
+SHORTHAND_COMMAND_PREFIX = "%"
+DEFAULT_MODEL = "4"
 CHAR_LIMIT_DISCORD = 2000         # max chars in a discord message
 
 models = { 
@@ -22,80 +25,78 @@ models = {
     "davinci-003": "text-davinci-003"
     }
 
-async def get_response_openai(model, prompt):
+async def get_response_openai(model, prompt, img_url):
     try: 
-        response = openai_client.chat.completions.create(
-            model = models[model],
-            messages = [ 
-                {
-                    "role": "user", 
-                    "content": 
-                    [
-                        { "type": "text", "text": prompt },
-                    ]
-                } 
-            ],
-        )
-        print(response)
-        return response.choices[0].message.content
-    except Exception as e:
-        print(str(e))
-        return "612,842,912,135 DEMOLISHED OPENAI SERVERS: " + str(e) 
-
-async def get_response_openai_vision(prompt, img_url):
-    try: 
-        response = openai_client.chat.completions.create(
-            model = models["4-vision"],
-            messages = [ 
-                {
-                    "role": "user", 
-                    "content": 
-                    [
-                        { "type": "text", "text": prompt },
-                        { "type": "image_url", "image_url": img_url}
-                    ]
-                } 
-            ],
-            max_tokens = 300,
-        )
-        print(response)
-        return response.choices[0].message.content
-    except Exception as e:
-        print(str(e))
-        return "612,842,912,135 DEMOLISHED OPENAI SERVERS: " + str(e) 
-
-async def get_response_openai_legacy(model, prompt):
-    try: 
-        response = openai_client.completions.create(
-            model = models[model],
-            prompt = prompt
-        )
-        print(response)
-        return response.choices[0].text
-    except Exception as e:
-        print(str(e))
-        return "612,842,912,135 DEMOLISHED OPENAI SERVERS: " + str(e) 
-
-async def send_msg(model, followup, prompt, img_url):
-    try:
-        # try get a response via openai api
+        # vision model
         if model == "4-vision":
             if img_url == None:
-                # todo check if url returns valid image
-                await followup.send("img url is required to use gpt-4-vision")
-                return
-            response = await get_response_openai_vision(prompt, img_url)
+                return "img url is required to use gpt-4-vision"
+            
+            response = openai_client.chat.completions.create(
+                model = models["4-vision"],
+                messages = [ 
+                    {
+                        "role": "user", 
+                        "content": 
+                        [
+                            { "type": "text", "text": prompt },
+                            { "type": "image_url", "image_url": img_url}
+                        ]
+                    } 
+                ],
+                max_tokens = 600,
+            )
+            print(response)
+            return response.choices[0].message.content
+    
+        # legacy completion models 
         elif model == "davinci-003":
-            response = await get_response_openai_legacy(model, prompt)
+            response = openai_client.completions.create(
+                model = models[model],
+                prompt = prompt,
+                temperature = 0.9,
+                max_tokens = 600
+            )
+            print(response)
+            return response.choices[0].text
+
+        # current models (4 and 3.5)
         else:
-            response = await get_response_openai(model, prompt)
+            response = openai_client.chat.completions.create(
+                model = models[model],
+                messages = [ 
+                    {
+                        "role": "user", 
+                        "content": 
+                        [
+                            { "type": "text", "text": prompt },
+                        ]
+                    } 
+                ],
+            )
+            print(response)
+            return response.choices[0].message.content
+    
+    except Exception as e:
+        print(str(e))
+        return "612,842,912,135 DEMOLISHED OPENAI SERVERS: " + str(e) 
+
+async def send_msg(model, followup, prompt, img_url, is_shorthand = False):
+    try:
+        response = await get_response_openai(model, prompt, img_url)    
 
         if len(response) > CHAR_LIMIT_DISCORD:
             parts = [response[i:i+CHAR_LIMIT_DISCORD] for i in range(0, len(response), CHAR_LIMIT_DISCORD)]
             for part in parts:
-                await followup.send(part)
+                if is_shorthand == True:
+                    await followup.reply(part)
+                else:
+                    await followup.send(part)
         else:
-            await followup.send(response)
+            if is_shorthand == True:
+                await followup.reply(response)
+            else:
+                await followup.send(response)
 
     except Exception as e:
         print(str(e))
@@ -117,8 +118,9 @@ def run_discord_bot():
             print(f"synced commands {synced}")
         except Exception as e:
             print(f"failed to sync command tree: {str(e)}")
-            
-    @tree.command(name = "kkb") 
+
+    # slash command  
+    @tree.command(name = SLASH_COMMAND_NAME) 
     @app_commands.choices(model = [
         app_commands.Choice(name = "4", value = 0),
         app_commands.Choice(name = "4-vision", value = 1),
@@ -139,7 +141,21 @@ def run_discord_bot():
             await interaction.response.send_message(f"retard really said \"{prompt}\" and sent this image {img_url} to {models[model.name]}")
 
         print(f'✧･ﾟ:✧･ﾟ:* ✧･ﾟ✧*:･ﾟﾐ☆ \n sending prompt "{prompt}" and image {img_url} to model {model.name} at {interaction.created_at} UTC \n ✧･ﾟ:✧･ﾟ:* ✧･ﾟ✧*:･ﾟﾐ☆')
-        await send_msg(model.name, interaction.followup, prompt, img_url)
+        await send_msg(model.name, interaction.followup, prompt, img_url, False)
+
+    # shorthand to access the default model
+    @bot.event
+    async def on_message(msg):
+        # ignore dms and msg sent by the bot itself
+        if msg.channel.type == "private" or msg.author == bot.user:
+            return
+
+        if msg.content[0] != "%":
+            return
+        
+        usr_msg = msg.content[1:]
+        print(f'✧･ﾟ:✧･ﾟ:* ✧･ﾟ✧*:･ﾟﾐ☆ \n sending prompt "{usr_msg}" at {msg.created_at} UTC to default model {DEFAULT_MODEL} \n ✧･ﾟ:✧･ﾟ:* ✧･ﾟ✧*:･ﾟﾐ☆')
+        await send_msg(DEFAULT_MODEL, msg, usr_msg, None, True)
 
     bot.run(os.getenv("DISCORD_KEY"))
 
