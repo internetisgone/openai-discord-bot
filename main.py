@@ -10,12 +10,18 @@ openai_client = OpenAI(
     api_key = os.getenv("OPENAI_API_KEY")
 )
 
-PROXY = None
-# PROXY = "http://127.0.0.1:1087"
 SLASH_COMMAND_NAME = "kkb"
 SHORTHAND_COMMAND_PREFIX = "%"
 DEFAULT_MODEL = "4"
 CHAR_LIMIT_DISCORD = 2000         # max chars in a discord message
+
+# for production 
+PROXY = None
+DISCORD_KEY = os.getenv("DISCORD_KEY")
+
+# for dev 
+# PROXY = "http://127.0.0.1:1087"
+# DISCORD_KEY = os.getenv("DISCORD_KEY_TEST")
 
 models = { 
     "4": "gpt-4",
@@ -25,7 +31,7 @@ models = {
     "davinci-003": "text-davinci-003"
     }
 
-async def get_response_openai(model, prompt, img_url):
+async def get_response_openai(model, prompt, temperature, img_url):
     try: 
         # vision model
         if model == "4-vision":
@@ -54,7 +60,7 @@ async def get_response_openai(model, prompt, img_url):
             response = openai_client.completions.create(
                 model = models[model],
                 prompt = prompt,
-                temperature = 0.9,
+                temperature = temperature,
                 max_tokens = 2000
             )
             print(response)
@@ -81,9 +87,9 @@ async def get_response_openai(model, prompt, img_url):
         print(str(e))
         return "612,842,912,135 DEMOLISHED OPENAI SERVERS: " + str(e) 
 
-async def send_msg(model, followup, prompt, img_url, is_shorthand = False):
+async def send_msg(model, followup, prompt, temperature, img_url, is_shorthand = False):
     try:
-        response = await get_response_openai(model, prompt, img_url)    
+        response = await get_response_openai(model, prompt, temperature, img_url)    
 
         if len(response) > CHAR_LIMIT_DISCORD:
             parts = [response[i:i+CHAR_LIMIT_DISCORD] for i in range(0, len(response), CHAR_LIMIT_DISCORD)]
@@ -135,16 +141,20 @@ def run_discord_bot():
         interaction: discord.Interaction,
         model: app_commands.Choice[int],
         prompt: str,
+        temperature: float = 1.0,
         img_url: str = None,
         # img_base64: str
         ):
         if img_url == None:
-            await interaction.response.send_message(f"retard really said \"{prompt}\" to {models[model.name]}")
+            await interaction.response.send_message(f"retard really said \"{prompt}\" at temperature {temperature} to {models[model.name]} ")
         else:
-            await interaction.response.send_message(f"retard really said \"{prompt}\" and sent this image {img_url} to {models[model.name]}")
+            await interaction.response.send_message(f"retard really said \"{prompt}\" and sent this image {img_url} at temperature {temperature} to {models[model.name]}")
 
-        print(f'✧･ﾟ:✧･ﾟ:* ✧･ﾟ✧*:･ﾟﾐ☆ \n sending prompt "{prompt}" and image {img_url} to model {model.name} at {interaction.created_at} UTC \n ✧･ﾟ:✧･ﾟ:* ✧･ﾟ✧*:･ﾟﾐ☆')
-        await send_msg(model.name, interaction.followup, prompt, img_url, False)
+        # temperature should be between 0 and 2
+        temperature = max(min(temperature, 2), 0)
+
+        print(f'✧･ﾟ:✧･ﾟ:* ✧･ﾟ✧*:･ﾟﾐ☆ \n sending prompt "{prompt}" and image {img_url} to model {model.name} at temperature {temperature} at {interaction.created_at} UTC \n ✧･ﾟ:✧･ﾟ:* ✧･ﾟ✧*:･ﾟﾐ☆')
+        await send_msg(model.name, interaction.followup, prompt, temperature, img_url, False)
 
     # shorthand command for the default model
     @bot.event
@@ -161,7 +171,7 @@ def run_discord_bot():
         print(f'✧･ﾟ:✧･ﾟ:* ✧･ﾟ✧*:･ﾟﾐ☆ \n sending prompt "{usr_msg}" at {msg.created_at} UTC to default model {DEFAULT_MODEL} \n ✧･ﾟ:✧･ﾟ:* ✧･ﾟ✧*:･ﾟﾐ☆')
         await send_msg(DEFAULT_MODEL, msg, usr_msg, None, True)
 
-    bot.run(os.getenv("DISCORD_KEY"))
+    bot.run(DISCORD_KEY)
 
 if __name__ == '__main__':
     run_discord_bot()
