@@ -171,7 +171,7 @@ def run_discord_bot():
         
         usr_msg = msg.content[1:]
         print(f'✧･ﾟ:✧･ﾟ:* ✧･ﾟ✧*:･ﾟﾐ☆ \n sending prompt "{usr_msg}" at {msg.created_at} UTC to default model {DEFAULT_MODEL} \n ✧･ﾟ:✧･ﾟ:* ✧･ﾟ✧*:･ﾟﾐ☆')
-        await send_msg(DEFAULT_MODEL, msg, usr_msg, None, True)
+        await send_msg(DEFAULT_MODEL, msg, usr_msg, 1.0, None, True)
 
     bot.run(DISCORD_KEY)
 
