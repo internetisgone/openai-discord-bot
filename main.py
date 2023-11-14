@@ -55,7 +55,7 @@ async def get_response_openai(model, prompt, img_url):
                 model = models[model],
                 prompt = prompt,
                 temperature = 0.9,
-                max_tokens = 600
+                max_tokens = 2000
             )
             print(response)
             return response.choices[0].text
@@ -100,7 +100,10 @@ async def send_msg(model, followup, prompt, img_url, is_shorthand = False):
 
     except Exception as e:
         print(str(e))
-        return "error: " + str(e)
+        if is_shorthand == True:
+            await followup.reply(str(e))
+        else:
+            await followup.send(str(e))
 
 def run_discord_bot():
     intents = discord.Intents.default()
@@ -143,14 +146,15 @@ def run_discord_bot():
         print(f'✧･ﾟ:✧･ﾟ:* ✧･ﾟ✧*:･ﾟﾐ☆ \n sending prompt "{prompt}" and image {img_url} to model {model.name} at {interaction.created_at} UTC \n ✧･ﾟ:✧･ﾟ:* ✧･ﾟ✧*:･ﾟﾐ☆')
         await send_msg(model.name, interaction.followup, prompt, img_url, False)
 
-    # shorthand to access the default model
+    # shorthand command for the default model
     @bot.event
     async def on_message(msg):
         # ignore dms and msg sent by the bot itself
         if msg.channel.type == "private" or msg.author == bot.user:
             return
 
-        if msg.content[0] != SHORTHAND_COMMAND_PREFIX:
+        # ignore msg not starting with the command prefix
+        if msg.content == None or len(msg.content) < 1 or msg.content[0] != SHORTHAND_COMMAND_PREFIX:
             return
         
         usr_msg = msg.content[1:]
