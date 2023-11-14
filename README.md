@@ -1,17 +1,18 @@
 # openai-discord-bot
 
 simple discord bot that uses openai's api to respond to messages.<br>
-currently supports gpt-4, gpt-4-vision-preview, gpt-4-1106-preview, gpt-3.5-turbo, and text-davinci-003 (legacy).<br>
+currently supports gpt-4, gpt-4-vision-preview, gpt-4-1106-preview, gpt-3.5-turbo, text-davinci-003 (legacy) and text-davinci-002 (legacy).<br>
 check the
-[official doc](https://platform.openai.com/docs/models) for latest changes.
+[api docs](https://platform.openai.com/docs/api-reference) for latest info.
 
 ## usage
 ### slash command
-`/kkb [model] [prompt] [image url]`<br>
+`/kkb [model] [prompt] [temperature] [image url]`<br>
+temperature is optional. defaults to 1<br>
 image url is required for gpt-4-vision-preview only
 ### shorthand command
 `%[prompt]`<br>
-uses the default model, in this case gpt-4
+uses the default model gpt-4
 
 ## setting up
 - install the requirements and create a .env file using the template below
