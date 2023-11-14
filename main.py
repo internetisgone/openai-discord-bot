@@ -1,4 +1,5 @@
 import os
+import logging 
 import discord
 from discord import app_commands
 from dotenv import load_dotenv
@@ -23,12 +24,15 @@ DISCORD_KEY = os.getenv("DISCORD_KEY")
 # PROXY = "http://127.0.0.1:1087"
 # DISCORD_KEY = os.getenv("DISCORD_KEY_TEST")
 
+logging.basicConfig(level = logging.DEBUG, format = "%(asctime)s %(levelname)s %(process)d %(message)s")
+
 models = { 
     "4": "gpt-4",
     "4-vision": "gpt-4-vision-preview",
     "4-turbo": "gpt-4-1106-preview",
     "3.5-turbo": "gpt-3.5-turbo", 
-    "davinci-003": "text-davinci-003"
+    "davinci-003": "text-davinci-003",
+    "davinci-002": "text-davinci-002"
     }
 
 async def get_response_openai(model, prompt, temperature, img_url):
@@ -50,21 +54,21 @@ async def get_response_openai(model, prompt, temperature, img_url):
                         ]
                     } 
                 ],
-                max_tokens = 600,
+                max_tokens = 1000,
                 temperature = temperature,
             )
-            print(response)
+            logging.debug(response)
             return response.choices[0].message.content
     
         # legacy completion models 
-        elif model == "davinci-003":
+        elif model == "davinci-003" or model == "davinci-002":
             response = openai_client.completions.create(
                 model = models[model],
                 prompt = prompt,
                 temperature = temperature,
-                max_tokens = 2000
+                max_tokens = 1500
             )
-            print(response)
+            logging.debug(response)
             return response.choices[0].text
 
         # current models (4 and 3.5)
@@ -80,13 +84,14 @@ async def get_response_openai(model, prompt, temperature, img_url):
                         ]
                     } 
                 ],
+                max_tokens = 1000,
                 temperature = temperature,
             )
-            print(response)
+            logging.debug(response)
             return response.choices[0].message.content
     
     except Exception as e:
-        print(str(e))
+        logging.error(str(e))
         return "612,842,912,135 DEMOLISHED OPENAI SERVERS: " + str(e) 
 
 async def send_msg(model, followup, prompt, temperature, img_url, is_shorthand = False):
@@ -107,7 +112,7 @@ async def send_msg(model, followup, prompt, temperature, img_url, is_shorthand =
                 await followup.send(response)
 
     except Exception as e:
-        print(str(e))
+        logging.error(str(e))
         if is_shorthand == True:
             await followup.reply(str(e))
         else:
@@ -122,13 +127,13 @@ def run_discord_bot():
 
     @bot.event
     async def on_ready():
-        print(f"{bot.user} is running")
+        logging.debug(f"{bot.user} is running")
         #  for guild_id in SERVER_WHITELIST:
         try:
             synced = await tree.sync()
-            print(f"synced commands {synced}")
+            logging.debug(f"synced commands {synced}")
         except Exception as e:
-            print(f"failed to sync command tree: {str(e)}")
+            logging.error(f"failed to sync command tree: {str(e)}")
 
     # slash command  
     @tree.command(name = SLASH_COMMAND_NAME) 
@@ -138,6 +143,7 @@ def run_discord_bot():
         app_commands.Choice(name = "4-turbo", value = 2),
         app_commands.Choice(name = "3.5-turbo", value = 3),
         app_commands.Choice(name = "davinci-003", value = 4),
+        app_commands.Choice(name = "davinci-002", value = 5)
     ])
     async def on_command(
         interaction: discord.Interaction,
@@ -147,15 +153,16 @@ def run_discord_bot():
         img_url: str = None,
         # img_base64: str
         ):
+
+        # temperature should be between 0 and 2
+        temperature = max(min(temperature, 2), 0)
+
         if img_url == None:
             await interaction.response.send_message(f"retard really said \"{prompt}\" at temperature {temperature} to {models[model.name]} ")
         else:
             await interaction.response.send_message(f"retard really said \"{prompt}\" and sent this image {img_url} at temperature {temperature} to {models[model.name]}")
 
-        # temperature should be between 0 and 2
-        temperature = max(min(temperature, 2), 0)
-
-        print(f'✧･ﾟ:✧･ﾟ:* ✧･ﾟ✧*:･ﾟﾐ☆ \n sending prompt "{prompt}" and image {img_url} to model {model.name} at temperature {temperature} at {interaction.created_at} UTC \n ✧･ﾟ:✧･ﾟ:* ✧･ﾟ✧*:･ﾟﾐ☆')
+        logging.debug(f'\n✧･ﾟ:✧･ﾟ:* ✧･ﾟ✧*:･ﾟﾐ☆ \n sending prompt "{prompt}" and image {img_url} to model {model.name} at temperature {temperature} \n ✧･ﾟ:✧･ﾟ:* ✧･ﾟ✧*:･ﾟﾐ☆')
         await send_msg(model.name, interaction.followup, prompt, temperature, img_url, False)
 
     # shorthand command for the default model
@@ -170,7 +177,7 @@ def run_discord_bot():
             return
         
         usr_msg = msg.content[1:]
-        print(f'✧･ﾟ:✧･ﾟ:* ✧･ﾟ✧*:･ﾟﾐ☆ \n sending prompt "{usr_msg}" at {msg.created_at} UTC to default model {DEFAULT_MODEL} \n ✧･ﾟ:✧･ﾟ:* ✧･ﾟ✧*:･ﾟﾐ☆')
+        logging.debug(f'\n✧･ﾟ:✧･ﾟ:* ✧･ﾟ✧*:･ﾟﾐ☆ \n sending prompt "{usr_msg}" to default model {DEFAULT_MODEL} \n ✧･ﾟ:✧･ﾟ:* ✧･ﾟ✧*:･ﾟﾐ☆')
         await send_msg(DEFAULT_MODEL, msg, usr_msg, 1.0, None, True)
 
     bot.run(DISCORD_KEY)
