@@ -51,6 +51,7 @@ async def get_response_openai(model, prompt, temperature, img_url):
                     } 
                 ],
                 max_tokens = 600,
+                temperature = temperature,
             )
             print(response)
             return response.choices[0].message.content
@@ -79,6 +80,7 @@ async def get_response_openai(model, prompt, temperature, img_url):
                         ]
                     } 
                 ],
+                temperature = temperature,
             )
             print(response)
             return response.choices[0].message.content
