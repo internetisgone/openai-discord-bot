@@ -3,7 +3,6 @@ import logging
 import discord
 from discord import app_commands
 from dotenv import load_dotenv
-import openai
 from openai import OpenAI
 
 load_dotenv()
@@ -24,7 +23,7 @@ DISCORD_KEY = os.getenv("DISCORD_KEY")
 # PROXY = "http://127.0.0.1:1087"
 # DISCORD_KEY = os.getenv("DISCORD_KEY_TEST")
 
-logging.basicConfig(level = logging.DEBUG, format = "%(asctime)s %(levelname)s %(process)d %(message)s")
+logging.basicConfig(level = logging.INFO, format = "%(asctime)s %(levelname)s %(process)d %(message)s")
 
 models = { 
     "4": "gpt-4",
@@ -57,7 +56,7 @@ async def get_response_openai(model, prompt, temperature, img_url):
                 max_tokens = 1000,
                 temperature = temperature,
             )
-            logging.debug(response)
+            print(response)
             return response.choices[0].message.content
     
         # legacy completion models 
@@ -68,7 +67,7 @@ async def get_response_openai(model, prompt, temperature, img_url):
                 temperature = temperature,
                 max_tokens = 1500
             )
-            logging.debug(response)
+            print(response)
             return response.choices[0].text
 
         # current models (4 and 3.5)
@@ -87,7 +86,7 @@ async def get_response_openai(model, prompt, temperature, img_url):
                 max_tokens = 1000,
                 temperature = temperature,
             )
-            logging.debug(response)
+            print(response)
             return response.choices[0].message.content
     
     except Exception as e:
@@ -127,11 +126,9 @@ def run_discord_bot():
 
     @bot.event
     async def on_ready():
-        logging.debug(f"{bot.user} is running")
-        #  for guild_id in SERVER_WHITELIST:
         try:
             synced = await tree.sync()
-            logging.debug(f"synced commands {synced}")
+            logging.info(f"synced {len(synced)} commands")
         except Exception as e:
             logging.error(f"failed to sync command tree: {str(e)}")
 
@@ -162,7 +159,7 @@ def run_discord_bot():
         else:
             await interaction.response.send_message(f"retard really said \"{prompt}\" and sent this image {img_url} at temperature {temperature} to {models[model.name]}")
 
-        logging.debug(f'\n✧･ﾟ:✧･ﾟ:* ✧･ﾟ✧*:･ﾟﾐ☆ \n sending prompt "{prompt}" and image {img_url} to model {model.name} at temperature {temperature} \n ✧･ﾟ:✧･ﾟ:* ✧･ﾟ✧*:･ﾟﾐ☆')
+        print(f'\n✧･ﾟ:✧･ﾟ:* ✧･ﾟ✧*:･ﾟﾐ☆ \n sending prompt "{prompt}" and image {img_url} to model {model.name} at temperature {temperature} \n ✧･ﾟ:✧･ﾟ:* ✧･ﾟ✧*:･ﾟﾐ☆')
         await send_msg(model.name, interaction.followup, prompt, temperature, img_url, False)
 
     # shorthand command for the default model
@@ -177,7 +174,7 @@ def run_discord_bot():
             return
         
         usr_msg = msg.content[1:]
-        logging.debug(f'\n✧･ﾟ:✧･ﾟ:* ✧･ﾟ✧*:･ﾟﾐ☆ \n sending prompt "{usr_msg}" to default model {DEFAULT_MODEL} \n ✧･ﾟ:✧･ﾟ:* ✧･ﾟ✧*:･ﾟﾐ☆')
+        print(f'\n✧･ﾟ:✧･ﾟ:* ✧･ﾟ✧*:･ﾟﾐ☆ \n sending prompt "{usr_msg}" to default model {DEFAULT_MODEL} \n ✧･ﾟ:✧･ﾟ:* ✧･ﾟ✧*:･ﾟﾐ☆')
         await send_msg(DEFAULT_MODEL, msg, usr_msg, 1.0, None, True)
 
     bot.run(DISCORD_KEY)
