@@ -21,8 +21,7 @@ uses the default model gpt-4
   ```
 - create a .env file using the template below
 - paste your openai api key in .env
-- go to discord developer portal, create a new application and add a bot under it
-- copy the bot's token and paste it in .env
+- go to discord developer portal, create a new application and add a bot under it. copy the bot's token and paste it in .env
 - go to OAuth2 - URL generator, set scopes to `bot` and `applications.commands`. select the `send messages` and `use slash commands` permissions
 - invite the bot to your server with the link and run main.py
 
