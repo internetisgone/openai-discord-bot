@@ -30,8 +30,6 @@ models = {
     "4-vision": "gpt-4-vision-preview",
     "4-turbo": "gpt-4-1106-preview",
     "3.5-turbo": "gpt-3.5-turbo", 
-    "davinci-003": "text-davinci-003",
-    "davinci-002": "text-davinci-002"
     }
 
 async def get_response_openai(model, prompt, temperature, img_url):
@@ -58,17 +56,6 @@ async def get_response_openai(model, prompt, temperature, img_url):
             )
             print(response)
             return response.choices[0].message.content
-    
-        # legacy completion models 
-        elif model == "davinci-003" or model == "davinci-002":
-            response = openai_client.completions.create(
-                model = models[model],
-                prompt = prompt,
-                temperature = temperature,
-                max_tokens = 1500
-            )
-            print(response)
-            return response.choices[0].text
 
         # current models (4 and 3.5)
         else:
@@ -139,8 +126,6 @@ def run_discord_bot():
         app_commands.Choice(name = "4-vision", value = 1),
         app_commands.Choice(name = "4-turbo", value = 2),
         app_commands.Choice(name = "3.5-turbo", value = 3),
-        app_commands.Choice(name = "davinci-003", value = 4),
-        app_commands.Choice(name = "davinci-002", value = 5)
     ])
     async def on_command(
         interaction: discord.Interaction,
