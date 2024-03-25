@@ -28,7 +28,7 @@ logging.basicConfig(level = logging.INFO, format = "%(asctime)s %(levelname)s %(
 models = { 
     "4": "gpt-4",
     "4-vision": "gpt-4-vision-preview",
-    "4-turbo": "gpt-4-1106-preview",
+    "4-turbo": "gpt-4-turbo-preview",
     "3.5-turbo": "gpt-3.5-turbo", 
     }
 
@@ -41,16 +41,21 @@ async def get_response_openai(model, prompt, temperature, img_url):
             
             response = openai_client.chat.completions.create(
                 model = models["4-vision"],
-                messages = [ 
+                messages = [
                     {
-                        "role": "user", 
+                        "role": "user",
                         "content": 
                         [
                             { "type": "text", "text": prompt },
-                            { "type": "image_url", "image_url": img_url}
-                        ]
-                    } 
-                ],
+                            {
+                                "type": "image_url",
+                                "image_url": {
+                                    "url": img_url,
+                                },
+                            },
+                        ],
+                    }
+            ],
                 max_tokens = 1000,
                 temperature = temperature,
             )
