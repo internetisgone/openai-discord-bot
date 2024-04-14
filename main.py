@@ -12,7 +12,7 @@ openai_client = OpenAI(
 
 SLASH_COMMAND_NAME = "kkb"
 SHORTHAND_COMMAND_PREFIX = "%"
-DEFAULT_MODEL = "4"
+DEFAULT_MODEL = "3.5-turbo"
 CHAR_LIMIT_DISCORD = 2000         # max chars in a discord message
 
 # for production 
@@ -28,8 +28,9 @@ logging.basicConfig(level = logging.INFO, format = "%(asctime)s %(levelname)s %(
 models = { 
     "4": "gpt-4",
     "4-vision": "gpt-4-vision-preview",
-    "4-turbo": "gpt-4-turbo-preview",
+    "4-turbo": "gpt-4-turbo",
     "3.5-turbo": "gpt-3.5-turbo", 
+    "davinci-002": "davinci-002"
     }
 
 async def get_response_openai(model, prompt, temperature, img_url):
@@ -59,9 +60,17 @@ async def get_response_openai(model, prompt, temperature, img_url):
                 max_tokens = 1000,
                 temperature = temperature,
             )
-            print(response)
             return response.choices[0].message.content
-
+        
+        elif model == "davinci-002":
+            response = openai_client.completions.create(
+                model = models[model],
+                prompt = prompt,
+                temperature = temperature,
+                max_tokens = 1000
+            )
+            return response.choices[0].text
+                    
         # current models (4 and 3.5)
         else:
             response = openai_client.chat.completions.create(
@@ -78,7 +87,6 @@ async def get_response_openai(model, prompt, temperature, img_url):
                 max_tokens = 1000,
                 temperature = temperature,
             )
-            print(response)
             return response.choices[0].message.content
     
     except Exception as e:
@@ -131,6 +139,7 @@ def run_discord_bot():
         app_commands.Choice(name = "4-vision", value = 1),
         app_commands.Choice(name = "4-turbo", value = 2),
         app_commands.Choice(name = "3.5-turbo", value = 3),
+        app_commands.Choice(name = "davinci-002", value = 4)
     ])
     async def on_command(
         interaction: discord.Interaction,
@@ -149,7 +158,7 @@ def run_discord_bot():
         else:
             await interaction.response.send_message(f"retard really said \"{prompt}\" and sent this image {img_url} at temperature {temperature} to {models[model.name]}")
 
-        print(f'\n✧･ﾟ:✧･ﾟ:* ✧･ﾟ✧*:･ﾟﾐ☆ \n sending prompt "{prompt}" and image {img_url} to model {model.name} at temperature {temperature} \n ✧･ﾟ:✧･ﾟ:* ✧･ﾟ✧*:･ﾟﾐ☆')
+        # print(f'\n✧･ﾟ:✧･ﾟ:* ✧･ﾟ✧*:･ﾟﾐ☆ \n sending prompt "{prompt}" and image {img_url} to model {model.name} at temperature {temperature} \n ✧･ﾟ:✧･ﾟ:* ✧･ﾟ✧*:･ﾟﾐ☆')
         await send_msg(model.name, interaction.followup, prompt, temperature, img_url, False)
 
     # shorthand command for the default model
