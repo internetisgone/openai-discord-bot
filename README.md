@@ -1,5 +1,5 @@
 # openai-discord-bot
-simple discord bot that responds to messages using openai's chat api.<br>
+simple discord bot that responds to messages using openai's chat completions api.<br>
 check the
 [api docs](https://platform.openai.com/docs/api-reference) for latest info.
 
@@ -10,7 +10,7 @@ temperature is optional. defaults to 1<br>
 image url is required for gpt-4-vision-preview only
 ### shorthand command
 `%[prompt]`<br>
-uses the default model gpt-4
+use the default model gpt-3.5-turbo
 
 ## setup and run
 - create a venv and install requirements
