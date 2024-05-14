@@ -12,7 +12,7 @@ openai_client = OpenAI(
 
 SLASH_COMMAND_NAME = "kkb"
 SHORTHAND_COMMAND_PREFIX = "%"
-DEFAULT_MODEL = "3.5-turbo"
+DEFAULT_MODEL = "4o"
 CHAR_LIMIT_DISCORD = 2000         # max chars in a discord message
 
 # for production 
@@ -26,6 +26,7 @@ DISCORD_KEY = os.getenv("DISCORD_KEY")
 logging.basicConfig(level = logging.INFO, format = "%(asctime)s %(levelname)s %(process)d %(message)s")
 
 models = { 
+    "4o": "gpt-4o",
     "4": "gpt-4",
     "4-vision": "gpt-4-vision-preview",
     "4-turbo": "gpt-4-turbo",
@@ -34,35 +35,9 @@ models = {
     }
 
 async def get_response_openai(model, prompt, temperature, img_url):
-    try: 
-        # vision model
-        if model == "4-vision":
-            if img_url == None:
-                return "img url is required to use gpt-4-vision"
-            
-            response = openai_client.chat.completions.create(
-                model = models["4-vision"],
-                messages = [
-                    {
-                        "role": "user",
-                        "content": 
-                        [
-                            { "type": "text", "text": prompt },
-                            {
-                                "type": "image_url",
-                                "image_url": {
-                                    "url": img_url,
-                                },
-                            },
-                        ],
-                    }
-            ],
-                max_tokens = 1000,
-                temperature = temperature,
-            )
-            return response.choices[0].message.content
-        
-        elif model == "davinci-002":
+    try:         
+        # legacy completion model
+        if model == "davinci-002":
             response = openai_client.completions.create(
                 model = models[model],
                 prompt = prompt,
@@ -71,23 +46,46 @@ async def get_response_openai(model, prompt, temperature, img_url):
             )
             return response.choices[0].text
                     
-        # current models (4 and 3.5)
+        # current models
         else:
-            response = openai_client.chat.completions.create(
+            response = None
+
+            if img_url == None:
+                response = openai_client.chat.completions.create(
                 model = models[model],
-                messages = [ 
+                messages = [
                     {
-                        "role": "user", 
+                        "role": "user",
                         "content": 
                         [
                             { "type": "text", "text": prompt },
-                        ]
-                    } 
+                        ],
+                    }
                 ],
                 max_tokens = 1000,
                 temperature = temperature,
             )
-            return response.choices[0].message.content
+            else:
+                response = openai_client.chat.completions.create(
+                model = models[model],
+                messages = [
+                    {
+                        "role": "user",
+                        "content": 
+                        [
+                            { "type": "text", "text": prompt },
+                            {
+                                "type": "image_url",
+                                "image_url": { "url": img_url },
+                            },
+                        ],
+                    }
+                ],
+                max_tokens = 1000,
+                temperature = temperature,
+            )
+           
+        return response.choices[0].message.content
     
     except Exception as e:
         logging.error(str(e))
@@ -135,11 +133,12 @@ def run_discord_bot():
     # slash command  
     @tree.command(name = SLASH_COMMAND_NAME) 
     @app_commands.choices(model = [
-        app_commands.Choice(name = "4", value = 0),
-        app_commands.Choice(name = "4-vision", value = 1),
-        app_commands.Choice(name = "4-turbo", value = 2),
-        app_commands.Choice(name = "3.5-turbo", value = 3),
-        app_commands.Choice(name = "davinci-002", value = 4)
+        app_commands.Choice(name = "4o", value = 0),
+        app_commands.Choice(name = "4", value = 1),
+        app_commands.Choice(name = "4-vision", value = 2),
+        app_commands.Choice(name = "4-turbo", value = 3),
+        app_commands.Choice(name = "3.5-turbo", value = 4),
+        app_commands.Choice(name = "davinci-002", value = 5)
     ])
     async def on_command(
         interaction: discord.Interaction,
@@ -173,7 +172,7 @@ def run_discord_bot():
             return
         
         usr_msg = msg.content[1:]
-        print(f'\n✧･ﾟ:✧･ﾟ:* ✧･ﾟ✧*:･ﾟﾐ☆ \n sending prompt "{usr_msg}" to default model {DEFAULT_MODEL} \n ✧･ﾟ:✧･ﾟ:* ✧･ﾟ✧*:･ﾟﾐ☆')
+        # print(f'\n✧･ﾟ:✧･ﾟ:* ✧･ﾟ✧*:･ﾟﾐ☆ \n sending prompt "{usr_msg}" to default model {DEFAULT_MODEL} \n ✧･ﾟ:✧･ﾟ:* ✧･ﾟ✧*:･ﾟﾐ☆')
         await send_msg(DEFAULT_MODEL, msg, usr_msg, 1.0, None, True)
 
     bot.run(DISCORD_KEY)
