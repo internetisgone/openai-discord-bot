@@ -28,7 +28,6 @@ logging.basicConfig(level = logging.INFO, format = "%(asctime)s %(levelname)s %(
 models = { 
     "4o": "gpt-4o",
     "4": "gpt-4",
-    "4-vision": "gpt-4-vision-preview",
     "4-turbo": "gpt-4-turbo",
     "3.5-turbo": "gpt-3.5-turbo", 
     "davinci-002": "davinci-002"
@@ -135,10 +134,9 @@ def run_discord_bot():
     @app_commands.choices(model = [
         app_commands.Choice(name = "4o", value = 0),
         app_commands.Choice(name = "4", value = 1),
-        app_commands.Choice(name = "4-vision", value = 2),
-        app_commands.Choice(name = "4-turbo", value = 3),
-        app_commands.Choice(name = "3.5-turbo", value = 4),
-        app_commands.Choice(name = "davinci-002", value = 5)
+        app_commands.Choice(name = "4-turbo", value = 2),
+        app_commands.Choice(name = "3.5-turbo", value = 3),
+        app_commands.Choice(name = "davinci-002", value = 4)
     ])
     async def on_command(
         interaction: discord.Interaction,
