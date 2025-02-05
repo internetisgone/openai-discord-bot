@@ -20,12 +20,13 @@ PROXY = None
 DISCORD_KEY = os.getenv("DISCORD_KEY")
 
 # for dev 
-# PROXY = "http://127.0.0.1:1087"
+# PROXY = "http://127.0.0.1:1077"
 # DISCORD_KEY = os.getenv("DISCORD_KEY_TEST")
 
 logging.basicConfig(level = logging.INFO, format = "%(asctime)s %(levelname)s %(process)d %(message)s")
 
 models = { 
+    "o1": "o1",
     "4o": "gpt-4o",
     "4": "gpt-4",
     "4-turbo": "gpt-4-turbo",
@@ -61,7 +62,7 @@ async def get_response_openai(model, prompt, temperature, img_url):
                         ],
                     }
                 ],
-                max_tokens = 1000,
+                max_completion_tokens = 1000,
                 temperature = temperature,
             )
             else:
@@ -80,7 +81,7 @@ async def get_response_openai(model, prompt, temperature, img_url):
                         ],
                     }
                 ],
-                max_tokens = 1000,
+                max_completion_tokens = 1000,
                 temperature = temperature,
             )
            
@@ -132,11 +133,12 @@ def run_discord_bot():
     # slash command  
     @tree.command(name = SLASH_COMMAND_NAME) 
     @app_commands.choices(model = [
-        app_commands.Choice(name = "4o", value = 0),
-        app_commands.Choice(name = "4", value = 1),
-        app_commands.Choice(name = "4-turbo", value = 2),
-        app_commands.Choice(name = "3.5-turbo", value = 3),
-        app_commands.Choice(name = "davinci-002", value = 4)
+        app_commands.Choice(name = "o1", value = 0),
+        app_commands.Choice(name = "4o", value = 1),
+        app_commands.Choice(name = "4", value = 2),
+        app_commands.Choice(name = "4-turbo", value = 3),
+        app_commands.Choice(name = "3.5-turbo", value = 4),
+        app_commands.Choice(name = "davinci-002", value = 5)
     ])
     async def on_command(
         interaction: discord.Interaction,
