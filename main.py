@@ -26,74 +26,80 @@ DISCORD_KEY = os.getenv("DISCORD_KEY")
 logging.basicConfig(level = logging.INFO, format = "%(asctime)s %(levelname)s %(process)d %(message)s")
 
 models = { 
-    "o1": "o1",
+    # chat models
+    "4.1": "gpt-4.1",
     "4o": "gpt-4o",
     "4": "gpt-4",
-    "4-turbo": "gpt-4-turbo",
-    "3.5-turbo": "gpt-3.5-turbo", 
+
+    # reasoning models
+    "o4-mini": "o4-mini",
+    "o3": "o3",
+    "o3-mini": "o3-mini",
+    "o1": "o1",
+    "o1-mini": "o1-mini",
+
+    # legacy completion model
     "davinci-002": "davinci-002"
     }
 
-async def get_response_openai(model, prompt, temperature, img_url):
-    try:         
+async def get_response_openai(model, prompt, img_url, web_search, temperature):
+    try:          
         # legacy completion model
         if model == "davinci-002":
-            response = openai_client.completions.create(
+            completion = openai_client.completions.create(
                 model = models[model],
                 prompt = prompt,
                 temperature = temperature,
                 max_tokens = 1000
             )
-            return response.choices[0].text
-                    
+            return completion.choices[0].text
+
         # current models
         else:
             response = None
-
-            if img_url == None:
-                response = openai_client.chat.completions.create(
+            
+            if model == "4.1" and web_search == True:
+                response = openai_client.responses.create(
                 model = models[model],
-                messages = [
+                tools=[ { "type": "web_search_preview" } ],
+                input = [                
                     {
                         "role": "user",
-                        "content": 
-                        [
-                            { "type": "text", "text": prompt },
-                        ],
+                        "content": [
+                            { "type": "input_text", "text": prompt },
+                            *( [{ "type": "input_image", "image_url": img_url }] if img_url else {} ) 
+                        ]
                     }
                 ],
-                max_completion_tokens = 1000,
                 temperature = temperature,
+                store = False
             )
+                            
             else:
-                response = openai_client.chat.completions.create(
-                model = models[model],
-                messages = [
-                    {
-                        "role": "user",
-                        "content": 
-                        [
-                            { "type": "text", "text": prompt },
-                            {
-                                "type": "image_url",
-                                "image_url": { "url": img_url },
-                            },
-                        ],
-                    }
-                ],
-                max_completion_tokens = 1000,
-                temperature = temperature,
-            )
-           
-        return response.choices[0].message.content
+                response = openai_client.responses.create(
+                    model = models[model],
+                    input = [                
+                        {
+                            "role": "user",
+                            "content": [
+                                { "type": "input_text", "text": prompt },
+                                *( [{ "type": "input_image", "image_url": img_url }] if img_url else {} ) 
+                            ]
+                        }
+                    ],
+                    temperature = temperature,
+                    store = False
+                )
+            
+        return response.output_text
     
     except Exception as e:
         logging.error(str(e))
         return "612,842,912,135 DEMOLISHED OPENAI SERVERS: " + str(e) 
 
-async def send_msg(model, followup, prompt, temperature, img_url, is_shorthand = False):
+async def send_msg(model, followup, prompt, img_url, web_search, temperature, is_shorthand = False):
     try:
-        response = await get_response_openai(model, prompt, temperature, img_url)    
+        response = await get_response_openai(model, prompt, img_url, web_search, temperature)    
 
         if len(response) > CHAR_LIMIT_DISCORD:
             parts = [response[i:i+CHAR_LIMIT_DISCORD] for i in range(0, len(response), CHAR_LIMIT_DISCORD)]
@@ -133,32 +139,45 @@ def run_discord_bot():
     # slash command  
     @tree.command(name = SLASH_COMMAND_NAME) 
     @app_commands.choices(model = [
-        app_commands.Choice(name = "o1", value = 0),
+        app_commands.Choice(name = "4.1", value = 0),
         app_commands.Choice(name = "4o", value = 1),
         app_commands.Choice(name = "4", value = 2),
-        app_commands.Choice(name = "4-turbo", value = 3),
-        app_commands.Choice(name = "3.5-turbo", value = 4),
-        app_commands.Choice(name = "davinci-002", value = 5)
+        app_commands.Choice(name = "o4-mini", value = 3),
+        app_commands.Choice(name = "o3", value = 4),
+        app_commands.Choice(name = "o3-mini", value = 5),
+        app_commands.Choice(name = "o1", value = 6),
+        app_commands.Choice(name = "o1-mini", value = 7),
+        app_commands.Choice(name = "davinci-002", value = 8)
     ])
     async def on_command(
         interaction: discord.Interaction,
         model: app_commands.Choice[int],
         prompt: str,
-        temperature: float = 1.0,
         img_url: str = None,
-        # img_base64: str
+        web_search: bool = False,
+        temperature: float = 1.0,
         ):
 
-        # temperature should be between 0 and 2
+        # temperature is between 0 and 2
         temperature = max(min(temperature, 2), 0)
-
+        
+        # some models do not support image input or web search
+        if img_url != None and (model.name == "4" or model.name == "o3-mini" or model.name == "o1-mini" or model.name == "davinci-002"):
+            img_url = None
+            await interaction.response.send_message(f"{models[model.name]} does not support image input")
+            return        
+        if web_search == True and model.name != "4.1":
+            web_search = False
+            await interaction.response.send_message("web search is currently supported by gpt-4.1 only")
+            return
+            
         if img_url == None:
-            await interaction.response.send_message(f"retard really said \"{prompt}\" at temperature {temperature} to {models[model.name]} ")
+            await interaction.response.send_message(f"retard really said \"{prompt}\" to {models[model.name]} ")
         else:
-            await interaction.response.send_message(f"retard really said \"{prompt}\" and sent this image {img_url} at temperature {temperature} to {models[model.name]}")
+            await interaction.response.send_message(f"retard really said \"{prompt}\" and sent this image {img_url} to {models[model.name]}")
 
         # print(f'\n✧･ﾟ:✧･ﾟ:* ✧･ﾟ✧*:･ﾟﾐ☆ \n sending prompt "{prompt}" and image {img_url} to model {model.name} at temperature {temperature} \n ✧･ﾟ:✧･ﾟ:* ✧･ﾟ✧*:･ﾟﾐ☆')
-        await send_msg(model.name, interaction.followup, prompt, temperature, img_url, False)
+        await send_msg(model.name, interaction.followup, prompt, img_url, web_search, temperature, False)
 
     # shorthand command for the default model
     @bot.event
@@ -173,7 +192,7 @@ def run_discord_bot():
         
         usr_msg = msg.content[1:]
         # print(f'\n✧･ﾟ:✧･ﾟ:* ✧･ﾟ✧*:･ﾟﾐ☆ \n sending prompt "{usr_msg}" to default model {DEFAULT_MODEL} \n ✧･ﾟ:✧･ﾟ:* ✧･ﾟ✧*:･ﾟﾐ☆')
-        await send_msg(DEFAULT_MODEL, msg, usr_msg, 1.0, None, True)
+        await send_msg(DEFAULT_MODEL, msg, usr_msg, None, False, 1.0, True)
 
     bot.run(DISCORD_KEY)
 
