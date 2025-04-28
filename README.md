@@ -1,12 +1,12 @@
 # openai-discord-bot
-simple discord bot that responds to messages using openai's chat completions api.<br>
+simple discord bot that responds to messages using openai's responses api and chat completions api.<br>
 check the
 [api docs](https://platform.openai.com/docs/api-reference) for latest info.
 
 ## usage
 #### slash command
-`/kkb [model] [prompt] [temperature] [image_url]`<br>
-temperature and image_url are optional<br>
+`/kkb [model] [prompt] [image_url] [web_search] [temperature] `<br>
+`model` and `prompt` are required, rest are optional<br>
 
 #### shorthand command
 `%[prompt]`<br>
